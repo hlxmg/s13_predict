@@ -1,2 +1,2 @@
 # s13_predict
-for LOL-s13 prediction
+英雄联盟s13采用瑞士轮赛制，本项目对最终冠军进行预测
