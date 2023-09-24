@@ -5,7 +5,7 @@ import collections
 #定义常量
 experiment_cnt = 1
 round_cnt = 3
-
+#mu代表实力值，sigma代表稳定性，值越大越不稳定
 jdg_mu = 98
 jdg_sigma = 1
 blg_mu = 95
@@ -41,95 +41,245 @@ class team():
         self.dk = random.gauss(dk_mu, dk_sigma)
         self.waika = random.gauss(waika_mu, waika_sigma)
 
-def print_log(pools):
+def print_pool(pools):
     #team_list = ['JDG', 'BLG', 'LNG', 'WBG', 'GEN', 'T1', 'KT', 'DK', 'WK1', 'WK2', 'WK3', 'Wk4', 'WK5', 'Wk6', 'WK7', 'WK8']
     for i in range(round_cnt):
         print('{}胜{}负晋级淘汰赛队伍有'.format(round_cnt, i), end='')
         print(','.join(team_list[i] for i in pools[round_cnt][i]))
 
-    # print('3胜0负晋级淘汰赛队伍有{}、{}'.format(team_list[pools[3][0][0]], team_list[pools[3][0][1]]))
-    # print('3胜1负晋级淘汰赛队伍有{}、{}、{}'.format(team_list[pools[3][1][0]], team_list[pools[3][1][1]], team_list[pools[3][1][2]]))
-    # print('3胜2负晋级淘汰赛队伍有{}、{}、{}'.format(team_list[pools[3][2][0]], team_list[pools[3][2][1]], team_list[pools[3][2][2]]))
-
-def main():
-    for i in range(experiment_cnt):
-        print('This is {}st experiment!!!'.format(i+1))
-        JDG, GEN, BLG, T1, LNG, KT, WBG, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8 = \
-            team().jdg, team().gen, team().blg, team().t1, team().lng, team().kt, team().wbg, team().dk, \
+def get_scores(baozhong):
+    global dk_mu
+    JDG, GEN, BLG, T1, LNG, KT, WBG, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8 = \
+        team().jdg, team().gen, team().blg, team().t1, team().lng, team().kt, team().wbg, team().dk, \
             team().waika, team().waika, team().waika, team().waika, team().waika, team().waika, team().waika, team().waika
+    dk_mu += baozhong
+    return [JDG, BLG, LNG, WBG, GEN, T1, KT, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8]
 
-        scores = [JDG, BLG, LNG, WBG, GEN, T1, KT, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8]
+def predict(print_log=True, return_baqiang=False, baozhong=0):
+    global dk_mu
+    dk_mu = 94
+    for i in range(experiment_cnt):
+        # print('This is {}st experiment!!!'.format(i+1))
 
         # print('JDG:{:.3f},GEN:{:.3f},BLG:{:.3f},T1:{:.3f},LNG:{:.3f},KT:{:.3f},WBG:{:.3f},DK:{:.3f},waika:{:.3f},{:.3f},{:.3f},{:.3f},{:.3f},{:.3f},{:.3f},{:.3f}'
         #       .format(JDG, GEN, BLG, T1, LNG, KT, WBG, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8))
 
+        win_cnt = [0]*16
+        lose_cnt = [0]*16
 
-        pools = [[[] for _ in range(round_cnt+1)] for __ in range(round_cnt+1)] #胜败达到3即晋级或淘汰
-        sign = [[0]*(round_cnt+1) for _ in range(round_cnt+1)]
-        pools[0][0] = list(range(16)) #共16支队伍
+        #抽签
+        group = [[0, 8, 12],
+                 [1, 9, 13],
+                 [2, 10, 14],
+                 [3, 11, 15]]
+        lck = [4, 5, 6, 7]
+        require = False
+        while not require:
+            require = True
+            random.shuffle(lck)
+            if any(lck[i]-group[i][0] == 4 for i in range(4)):
+                require = False
+        for i in range(4):
+            group[i].append(lck[i])
+            random.shuffle(group[i])
+        if print_log:
+            for i in range(4):
+                print('第{}组的队伍有：{}'.format(i+1, ','.join(team_list[x] for x in group[i])))
 
-        next_round = collections.deque([(0, 0)])
-        while next_round:
-            w, l = next_round.popleft()
-            if w == round_cnt or l == round_cnt:
-                continue
-            n = len(pools[w][l])
-            print('{}胜{}败池子里有{}个战队'.format(w,l,n), pools[w][l])
-            #抽签
-            flag = False
-            while not flag:
-                flag = True
-                sample1 = random.sample(pools[w][l], n//2)
-                sample2 = [i for i in pools[w][l] if i not in sample1]
-                for a, b in zip(sample1, sample2):
-                    if w==0 and l==0 and ((0 <= a <= 3 and 0 <= b <= 3) or (4 <= a <= 7 and 4 <= b <= 7)):
-                        flag = False
-                        break
-            print('{}胜{}负池子抽签结果'.format(w,l), sample1, sample2)
+        #排赛程
+        scores = get_scores(baozhong)
 
-            #当天比赛状态及结果
-            JDG, GEN, BLG, T1, LNG, KT, WBG, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8 = \
-                team().jdg, team().gen, team().blg, team().t1, team().lng, team().kt, team().wbg, team().dk, \
-                team().waika, team().waika, team().waika, team().waika, team().waika, team().waika, team().waika, team().waika
-            scores = [JDG, BLG, LNG, WBG, GEN, T1, KT, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8]
+        for i in range(4):
+            a, b = group[i][0], group[i][1]
+            if scores[a] > scores[b]:
+                win_cnt[a] += 1
+                lose_cnt[b] += 1
+            else:
+                win_cnt[b] += 1
+                lose_cnt[a] += 1
+            c, d = group[i][2], group[i][3]
+            if scores[c] > scores[d]:
+                win_cnt[c] += 1
+                lose_cnt[d] += 1
+            else:
+                win_cnt[d] += 1
+                lose_cnt[c] += 1
 
-            for a,b in zip(sample1, sample2):
-                if scores[a] > scores[b]:
-                    pools[w+1][l].append(a)
-                    pools[w][l+1].append(b)
+        scores = get_scores(baozhong)
+        for i in range(4):
+            a, b = group[i][0], group[i][2]
+            if scores[a] > scores[b]:
+                win_cnt[a] += 1
+                lose_cnt[b] += 1
+            else:
+                win_cnt[b] += 1
+                lose_cnt[a] += 1
+            c, d = group[i][1], group[i][3]
+            if scores[c] > scores[d]:
+                win_cnt[c] += 1
+                lose_cnt[d] += 1
+            else:
+                win_cnt[d] += 1
+                lose_cnt[c] += 1
+
+        scores = get_scores(baozhong)
+        for i in range(4):
+            a, b = group[i][0], group[i][3]
+            if scores[a] > scores[b]:
+                win_cnt[a] += 1
+                lose_cnt[b] += 1
+            else:
+                win_cnt[b] += 1
+                lose_cnt[a] += 1
+            c, d = group[i][1], group[i][2]
+            if scores[c] > scores[d]:
+                win_cnt[c] += 1
+                lose_cnt[d] += 1
+            else:
+                win_cnt[d] += 1
+                lose_cnt[c] += 1
+
+        scores = get_scores(baozhong)
+
+        for i in range(4):
+            a, b = group[i][0], group[i][1]
+            if scores[a] > scores[b]:
+                win_cnt[a] += 1
+                lose_cnt[b] += 1
+            else:
+                win_cnt[b] += 1
+                lose_cnt[a] += 1
+            c, d = group[i][2], group[i][3]
+            if scores[c] > scores[d]:
+                win_cnt[c] += 1
+                lose_cnt[d] += 1
+            else:
+                win_cnt[d] += 1
+                lose_cnt[c] += 1
+
+        scores = get_scores(baozhong)
+        for i in range(4):
+            a, b = group[i][0], group[i][2]
+            if scores[a] > scores[b]:
+                win_cnt[a] += 1
+                lose_cnt[b] += 1
+            else:
+                win_cnt[b] += 1
+                lose_cnt[a] += 1
+            c, d = group[i][1], group[i][3]
+            if scores[c] > scores[d]:
+                win_cnt[c] += 1
+                lose_cnt[d] += 1
+            else:
+                win_cnt[d] += 1
+                lose_cnt[c] += 1
+
+        scores = get_scores(baozhong)
+        for i in range(4):
+            a, b = group[i][0], group[i][3]
+            if scores[a] > scores[b]:
+                win_cnt[a] += 1
+                lose_cnt[b] += 1
+            else:
+                win_cnt[b] += 1
+                lose_cnt[a] += 1
+            c, d = group[i][1], group[i][2]
+            if scores[c] > scores[d]:
+                win_cnt[c] += 1
+                lose_cnt[d] += 1
+            else:
+                win_cnt[d] += 1
+                lose_cnt[c] += 1
+
+        #是否需要加赛
+        scores = get_scores(baozhong)
+
+        pool1 = []
+        pool2 = []
+        for i in range(4):
+            #sorted(group[i], key=lambda x: -win_cnt[i])
+            group[i].sort(key=lambda x: -win_cnt[x])
+            win_cnt_sort = list(win_cnt[x] for x in group[i])
+            if win_cnt_sort[0] == 6 and win_cnt_sort[1] == win_cnt_sort[2] and win_cnt_sort[1] == win_cnt_sort[3]:
+                pool1.append(group[i][0])
+                a, b, c = group[i][1], group[i][2], group[i][3]
+                temp = sorted([a, b, c], key=lambda x: -scores[x])
+                pool2.append(temp[0])
+            elif win_cnt_sort[0] == 6 and win_cnt_sort[1] == win_cnt_sort[2]:
+                pool1.append(group[i][0])
+                a, b = group[i][1], group[i][2]
+                temp = sorted([a, b], key=lambda x: -scores[x])
+                pool2.append(temp[0])
+            elif win_cnt_sort[0] == 5 and win_cnt_sort[1] == 5 or (win_cnt_sort[0] == 4 and win_cnt_sort[1] == 4 and win_cnt_sort[2] != 4):
+                a, b = group[i][0], group[i][1]
+                temp = sorted([a, b], key=lambda x: -scores[x])
+                pool1.append(temp[0])
+                pool2.append(temp[1])
+            elif win_cnt_sort[0] == 4 and win_cnt_sort[1] == 4 and win_cnt_sort[2] == 4:
+                pool1.append(group[i][0])
+                a, b, c = group[i][0], group[i][1], group[i][2]
+                temp = sorted([a,b,c], key=lambda x: -scores[x])
+                pool1.append(temp[0])
+                pool2.append(temp[1])
+            elif win_cnt_sort[0] == 3 and win_cnt_sort[1] == 3 and win_cnt_sort[2] == 3 and win_cnt_sort[3] == 3:
+                a, b, c, d = group[i]
+                temp = sorted([a, b, c, d], key=lambda x: -scores[x])
+                pool1.append(temp[0])
+                pool2.append(temp[1])
+            else:
+                pool1.append(group[i][0])
+                pool2.append(group[i][1])
+
+        # 八强抽签，半区规避
+        guibi = {}
+        for i in range(4):
+            guibi[pool1[i]] = pool2[i]
+            guibi[pool2[i]] = pool1[i]
+        pool20 = pool2[:]
+        random.shuffle(pool1)
+        random.shuffle(pool20)
+        pool2 = [-1]*4
+        for i in range(4):
+            if i == 0 or i == 1:
+                gb = guibi[pool20[i]]
+                if pool1[0] == gb or pool1[1] == gb:
+                    if pool2[2] != -1:
+                        pool2[3] = pool20[i]
+                    else:
+                        pool2[2] = pool20[i]
                 else:
-                    pools[w+1][l].append(b)
-                    pools[w][l+1].append(a)
-            # 不需要重复计算
-            if sign[w+1][l] == 0:
-                next_round.append((w+1,l))
-            if sign[w][l+1] == 0:
-                next_round.append((w,l+1))
-            sign[w+1][l] = 1
-            sign[w][l+1] = 1
+                    if pool2[0] != -1:
+                        pool2[1] = pool20[i]
+                    else:
+                        pool2[0] = pool20[i]
+            else:
+                gb = guibi[pool20[i]]
+                if pool1[0] == gb or pool1[1] == gb:
+                    if pool2[2] != -1:
+                        pool2[3] = pool20[i]
+                    else:
+                        pool2[2] = pool20[i]
+                else:
+                    if pool2[0] != -1:
+                        pool2[1] = pool20[i]
+                    else:
+                        pool2[0] = pool20[i]
 
-        # 池子情况
-        print_log(pools)
+        baqiang = []
+        baqiang.extend(pool1)
+        baqiang.extend(pool2)
+        if return_baqiang:
+            return [team_list[i] for i in baqiang]
+        if print_log:
+            print('八强抽签结果是', end='\n')
+            print(','.join(team_list[i] for i in pool1))
+            print(','.join(team_list[i] for i in pool2))
 
-        #八强抽签
-        sample1 = []
-        sample2 = []
-        sample1.extend(pools[3][0])
-        sample1.extend(pools[3][1][:2])
-        sample2.extend(pools[3][2])
-        sample2.append(pools[3][1][2])
-        random.shuffle(sample1)
-        random.shuffle(sample2)
-        #print(sample1, sample2)
-        print('八强抽签结果是', end='\n')
-        print(','.join(team_list[i] for i in sample1))
-        print(','.join(team_list[i] for i in sample2))
+        sample1 = pool1[:]
+        sample2 = pool2[:]
 
         # 八强赛
-        JDG, GEN, BLG, T1, LNG, KT, WBG, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8 = \
-            team().jdg, team().gen, team().blg, team().t1, team().lng, team().kt, team().wbg, team().dk, \
-            team().waika, team().waika, team().waika, team().waika, team().waika, team().waika, team().waika, team().waika
-        scores = [JDG, BLG, LNG, WBG, GEN, T1, KT, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8]
+        scores = get_scores(baozhong)
 
         siqiang1 = []
         siqiang2 = []
@@ -145,16 +295,13 @@ def main():
                 else:
                     siqiang2.append(sample2[i])
 
-        print('晋级四强的队伍是', end='')
-        print(','.join(team_list[i] for i in siqiang1+siqiang2))
+        if print_log:
+            print('晋级四强的队伍是', end='')
+            print(','.join(team_list[i] for i in siqiang1 + siqiang2))
 
-
-        #四强赛
+        # 四强赛
         zongjuesai = []
-        JDG, GEN, BLG, T1, LNG, KT, WBG, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8 = \
-            team().jdg, team().gen, team().blg, team().t1, team().lng, team().kt, team().wbg, team().dk, \
-            team().waika, team().waika, team().waika, team().waika, team().waika, team().waika, team().waika, team().waika
-        scores = [JDG, BLG, LNG, WBG, GEN, T1, KT, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8]
+        scores = get_scores(baozhong)
 
         if scores[siqiang1[0]] > scores[siqiang1[1]]:
             zongjuesai.append(siqiang1[0])
@@ -164,20 +311,24 @@ def main():
             zongjuesai.append(siqiang2[0])
         else:
             zongjuesai.append(siqiang2[1])
-        print('晋级总决赛的队伍是',end='')
-        print(','.join(team_list[i] for i in zongjuesai))
+        if print_log:
+            print('晋级总决赛的队伍是', end='')
+            print(','.join(team_list[i] for i in zongjuesai))
 
-        #总决赛
-        JDG, GEN, BLG, T1, LNG, KT, WBG, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8 = \
-            team().jdg, team().gen, team().blg, team().t1, team().lng, team().kt, team().wbg, team().dk, \
-            team().waika, team().waika, team().waika, team().waika, team().waika, team().waika, team().waika, team().waika
-        scores = [JDG, BLG, LNG, WBG, GEN, T1, KT, DK, WK1, WK2, WK3, Wk4, WK5, Wk6, WK7, WK8]
-
-        print('获得S13总冠军的队伍是', end='')
+        # 总决赛
+        scores = get_scores(baozhong)
+        # print('dk实力为', dk_mu)
+        if print_log:
+            print('获得S13总冠军的队伍是', end='')
         if scores[zongjuesai[0]] > scores[zongjuesai[1]]:
-            print(team_list[zongjuesai[0]])
+            if print_log:
+                print(team_list[zongjuesai[0]])
+            return team_list[zongjuesai[0]]
         else:
-            print(team_list[zongjuesai[1]])
+            if print_log:
+                print(team_list[zongjuesai[1]])
+            return team_list[zongjuesai[1]]
+
 
 
 
