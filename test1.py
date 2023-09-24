@@ -1,8 +1,8 @@
-from s13_predict import predict
+import s13_predict
 from collections import Counter
 c = []
 for i in range(10000):
-    a = predict.predict()
+    a = s13_predict.predict()
     c.append(a)
 result = Counter(c)
 print(result)

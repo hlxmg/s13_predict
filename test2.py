@@ -1,4 +1,4 @@
-from s13_predict import predict
+import s13_predict
 
-predict.predict()
+s13_predict.predict()
 
